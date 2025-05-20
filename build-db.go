@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	_ "embed"
 	"log"
 	"os"
@@ -11,6 +12,7 @@ import (
 	// Use sqlite-vec for semanting search in the future.
 	_ "github.com/asg017/sqlite-vec-go-bindings/ncruces"
 	"github.com/ncruces/go-sqlite3"
+	"github.com/yuin/goldmark"
 )
 
 type Record struct {
@@ -72,11 +74,10 @@ func main() {
 
 		path := filepath.Join(topic, slug+".md")
 
-		// For now, just print the file info
-		/*
-			log.Printf("Processing %s (topic: %s, slug: %s, path: %s)", file, topic, slug, path)
-			log.Printf("Body: %s", string(body))
-		*/
+		var htmlBuffer bytes.Buffer
+		if err := goldmark.Convert(bodyBytes, &htmlBuffer); err != nil {
+			log.Fatal(err)
+		}
 
 		record := Record{
 			CreatedAt: time.Now(),
@@ -87,7 +88,7 @@ func main() {
 			Title:     title,
 			Url:       path,
 			Body:      body,
-			Html:      "",
+			Html:      htmlBuffer.String(),
 		}
 
 		oldRecord := Record{}
