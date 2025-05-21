@@ -15,6 +15,7 @@ env:
   GCP_ARTIFACT_REGISTRY_REPOSITORY: "tadasv" # Your Artifact Registry repository name
   IMAGE_NAME: "til" # The name of your Docker image
   GO_VERSION: "1.24" # Specify your Go version
+  GCS_BUCKET_NAME: "til.vilkeliskis.com" # Your Google Cloud Storage bucket name
 
 jobs:
   build-and-push:
@@ -34,6 +35,11 @@ jobs:
         with:
           workload_identity_provider: 'projects/${{ env.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/${{ secrets.GCP_WORKLOAD_IDENTITY_POOL_ID }}/providers/${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER_ID }}' # e.g., projects/YOUR_PROJECT_ID/locations/global/workloadIdentityPools/YOUR_POOL_ID/providers/YOUR_PROVIDER_ID
           service_account: '${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}' # e.g., your-service-account@YOUR_PROJECT_ID.iam.gserviceaccount.com
+
+      - name: Download file from Google Cloud Storage
+        run: |
+          gsutil cp gs://${{ env.GCS_BUCKET_NAME }}/tils.db ./tils.db
+        # Note: Make sure your service account has Storage Object Viewer (roles/storage.objectViewer) permission
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
