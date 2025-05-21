@@ -41,17 +41,6 @@ jobs:
       - name: Set up Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Deploy to Cloud Run
-        run: |-
-          gcloud run deploy ${{ env.CLOUD_RUN_SERVICE_NAME }} \
-            --image "${{ env.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REGISTRY_REPOSITORY }}/${{ env.IMAGE_NAME }}:latest" \
-            --region ${{ env.CLOUD_RUN_REGION }} \
-            --platform "managed" \
-            --port "3000" \
-            --allow-unauthenticated \
-            --cpu "1" \
-            --memory "256Mi"
-
       - name: Download file from Google Cloud Storage
         run: |
           gsutil cp gs://${{ env.GCS_BUCKET_NAME }}/tils.db ./tils.db
@@ -92,6 +81,18 @@ jobs:
         if: github.event_name != 'pull_request'
         run: |
           gsutil cp ./tils.db gs://${{ env.GCS_BUCKET_NAME }}/tils.db
+
+      - name: Deploy to Cloud Run
+        if: github.event_name != 'pull_request'
+        run: |-
+          gcloud run deploy ${{ env.CLOUD_RUN_SERVICE_NAME }} \
+            --image "${{ env.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REGISTRY_REPOSITORY }}/${{ env.IMAGE_NAME }}:latest" \
+            --region ${{ env.CLOUD_RUN_REGION }} \
+            --platform "managed" \
+            --port "3000" \
+            --allow-unauthenticated \
+            --cpu "1" \
+            --memory "256Mi"
 
       - name: Print Image URL
         if: github.event_name != 'pull_request'
