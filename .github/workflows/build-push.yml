@@ -36,6 +36,9 @@ jobs:
           workload_identity_provider: 'projects/${{ env.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/${{ secrets.GCP_WORKLOAD_IDENTITY_POOL_ID }}/providers/${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER_ID }}' # e.g., projects/YOUR_PROJECT_ID/locations/global/workloadIdentityPools/YOUR_POOL_ID/providers/YOUR_PROVIDER_ID
           service_account: '${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}' # e.g., your-service-account@YOUR_PROJECT_ID.iam.gserviceaccount.com
 
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
       - name: Download file from Google Cloud Storage
         run: |
           gsutil cp gs://${{ env.GCS_BUCKET_NAME }}/tils.db ./tils.db
