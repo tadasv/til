@@ -1,0 +1,101 @@
+name: Build and Push Go App to GCP Artifact Registry
+
+on:
+  push:
+    branches:
+      - main # Or your default branch
+  pull_request:
+    branches:
+      - main # Or your default branch
+
+env:
+  GCP_PROJECT_NUMBER: ${{ secrets.GCP_PROJECT_NUMBER }} # Your GCP Project Number
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }} # Your GCP Project ID
+  GCP_ARTIFACT_REGISTRY_REGION: "us-east1" # e.g., us-central1, europe-west1
+  GCP_ARTIFACT_REGISTRY_REPOSITORY: "tadasv" # Your Artifact Registry repository name
+  CLOUD_RUN_REGION: "us-east1" # e.g., us-central1, europe-west1
+  CLOUD_RUN_SERVICE_NAME: "til"
+  IMAGE_NAME: "til" # The name of your Docker image
+  GO_VERSION: "1.24" # Specify your Go version
+  GCS_BUCKET_NAME: "til.vilkeliskis.com" # Your Google Cloud Storage bucket name
+
+jobs:
+  build-and-push:
+    name: Build and Push to Artifact Registry
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write' # Required for Workload Identity Federation
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: 'projects/${{ env.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/${{ secrets.GCP_WORKLOAD_IDENTITY_POOL_ID }}/providers/${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER_ID }}' # e.g., projects/YOUR_PROJECT_ID/locations/global/workloadIdentityPools/YOUR_POOL_ID/providers/YOUR_PROVIDER_ID
+          service_account: '${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}' # e.g., your-service-account@YOUR_PROJECT_ID.iam.gserviceaccount.com
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Download file from Google Cloud Storage
+        run: |
+          gsutil cp gs://${{ env.GCS_BUCKET_NAME }}/tils.db ./tils.db
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Artifact Registry
+        # This uses the gcloud CLI to configure Docker to authenticate with Artifact Registry.
+        # Make sure the service account has "Artifact Registry Writer" role.
+        run: |-
+          gcloud auth configure-docker ${{ env.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: . # Docker build context (usually the root of your repo)
+          file: ./Dockerfile # Path to your Dockerfile
+          push: ${{ github.event_name != 'pull_request' }} # Only push on merge to main, not on PRs
+          # make available to docker so we can access tagged images later per branch, but don't push to registry
+          load: true
+          tags: |
+            ${{ env.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REGISTRY_REPOSITORY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REGISTRY_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # Pass Go version as a build argument to Dockerfile
+          build-args: |
+            GO_VERSION=${{ env.GO_VERSION }}
+
+      - name: Extract file from Docker image
+        run: |
+          docker create --name temp_container ${{ env.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REGISTRY_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker cp temp_container:/app/tils.db ./tils.db
+          docker rm temp_container
+
+      - name: Upload file to Google Cloud Storage
+        if: github.event_name != 'pull_request'
+        run: |
+          gsutil cp ./tils.db gs://${{ env.GCS_BUCKET_NAME }}/tils.db
+
+      - name: Deploy to Cloud Run
+        if: github.event_name != 'pull_request'
+        run: |-
+          gcloud run deploy ${{ env.CLOUD_RUN_SERVICE_NAME }} \
+            --image "${{ env.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REGISTRY_REPOSITORY }}/${{ env.IMAGE_NAME }}:latest" \
+            --region ${{ env.CLOUD_RUN_REGION }} \
+            --platform "managed" \
+            --port "3000" \
+            --allow-unauthenticated \
+            --cpu "1" \
+            --memory "256Mi"
+
+      - name: Print Image URL
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "Image pushed to: ${{ env.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REGISTRY_REPOSITORY }}/${{ env.IMAGE_NAME }}:latest"
+          echo "Image also tagged with SHA: ${{ env.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REGISTRY_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
