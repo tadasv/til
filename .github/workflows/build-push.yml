@@ -48,7 +48,8 @@ jobs:
         with:
           context: . # Docker build context (usually the root of your repo)
           file: ./Dockerfile # Path to your Dockerfile
-          push: ${{ github.event_name != 'pull_request' }} # Only push on merge to main, not on PRs
+          #push: ${{ github.event_name != 'pull_request' }} # Only push on merge to main, not on PRs
+          push: true
           tags: |
             ${{ env.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REGISTRY_REPOSITORY }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REGISTRY_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
