@@ -43,6 +43,11 @@ jobs:
         run: |
           gsutil cp gs://${{ env.GCS_BUCKET_NAME }}/tils.db ./tils.db
 
+      - name: Upload file to Google Cloud Storage
+        #if: github.event_name != 'pull_request'
+        run: |
+          gsutil cp ./tils.db gs://${{ env.GCS_BUCKET_NAME }}/tils.db
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
