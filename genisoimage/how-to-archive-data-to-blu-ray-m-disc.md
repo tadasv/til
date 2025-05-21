@@ -5,13 +5,15 @@ compatible rewriter.
 
 1. Create an ISO image of your data directory that you want to burn.
 
-    genisoimage -f -J -joliet-long -r -allow-lowercase -allow-multidot -o <image.iso> <dir>
+    ```sh
+    $ genisoimage -f -J -joliet-long -r -allow-lowercase -allow-multidot -o <image.iso> <dir>
+    ```
 
-2. Mount the image with `mount -o image.ios /mnt/cdrom` to check that all data
-   and files look good. If not carefule with genisoimage flags it's possible to
+3. Mount the image with `mount -o image.ios /mnt/cdrom` to check that all data
+   and files look good. If not careful with genisoimage flags it's possible to
    get truncated 8.3 formatted filenames.
 
-3. Burn the image with `growisofs -speed=1 -Z /dev/sr0=image.iso`. Make sure to
+4. Burn the image with `growisofs -speed=1 -Z /dev/sr0=image.iso`. Make sure to
    set the speed to one so that it does not mess up large BD M-Discs. Some
    people were saying that higher speed options may work but it may incorrectly
    write data to M-Disc since they like slower writes.
