@@ -4,6 +4,7 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
+	"html/template"
 	"log"
 	"os"
 	"path/filepath"
@@ -68,8 +69,13 @@ func main() {
 			log.Fatal(err)
 		}
 
+		fileInfo, err := os.Stat(file)
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		record := Record{
-			CreatedAt: time.Now(),
+			CreatedAt: fileInfo.ModTime(),
 			UpdatedAt: time.Now(),
 			Path:      path,
 			Slug:      slug,
@@ -77,7 +83,7 @@ func main() {
 			Title:     title,
 			Url:       fmt.Sprintf("https://github.com/tadasv/til/blob/main/%s", path),
 			Body:      body,
-			Html:      htmlBuffer.String(),
+			Html:      template.HTML(htmlBuffer.String()),
 		}
 
 		oldRecord := Record{}
@@ -99,7 +105,7 @@ func main() {
 			oldRecord.Title = stmt.ColumnText(3)
 			oldRecord.Url = stmt.ColumnText(4)
 			oldRecord.Body = stmt.ColumnText(5)
-			oldRecord.Html = stmt.ColumnText(6)
+			oldRecord.Html = template.HTML(stmt.ColumnText(6))
 		}
 		stmt.Close()
 
@@ -121,7 +127,7 @@ func main() {
 				insertStmt.BindText(6, record.Title)
 				insertStmt.BindText(7, record.Url)
 				insertStmt.BindText(8, record.Body)
-				insertStmt.BindText(9, record.Html)
+				insertStmt.BindText(9, string(record.Html))
 				if err := insertStmt.Exec(); err != nil {
 					log.Fatal(err)
 				}
@@ -138,7 +144,7 @@ func main() {
 				}
 				updateStmt.BindText(1, time.Now().Format(time.RFC3339))
 				updateStmt.BindText(2, record.Body)
-				updateStmt.BindText(3, record.Html)
+				updateStmt.BindText(3, string(record.Html))
 				updateStmt.BindText(4, record.Title)
 				updateStmt.BindText(5, record.Url)
 				updateStmt.BindText(6, record.Slug)
