@@ -13,6 +13,8 @@ env:
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }} # Your GCP Project ID
   GCP_ARTIFACT_REGISTRY_REGION: "us-east1" # e.g., us-central1, europe-west1
   GCP_ARTIFACT_REGISTRY_REPOSITORY: "tadasv" # Your Artifact Registry repository name
+  CLOUD_RUN_REGION: "us-east1" # e.g., us-central1, europe-west1
+  CLOUD_RUN_SERVICE_NAME: "til"
   IMAGE_NAME: "til" # The name of your Docker image
   GO_VERSION: "1.24" # Specify your Go version
   GCS_BUCKET_NAME: "til.vilkeliskis.com" # Your Google Cloud Storage bucket name
@@ -38,6 +40,17 @@ jobs:
 
       - name: Set up Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy to Cloud Run
+        run: |-
+          gcloud run deploy ${{ env.CLOUD_RUN_SERVICE_NAME }} \
+            --image "${{ env.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REGISTRY_REPOSITORY }}/${{ env.IMAGE_NAME }}:latest" \
+            --region ${{ env.CLOUD_RUN_REGION }} \
+            --platform "managed" \
+            --port "3000" \
+            --allow-unauthenticated \
+            --cpu "1" \
+            --memory "256Mi"
 
       - name: Download file from Google Cloud Storage
         run: |
