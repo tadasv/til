@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	_ "embed"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -14,18 +15,6 @@ import (
 	"github.com/ncruces/go-sqlite3"
 	"github.com/yuin/goldmark"
 )
-
-type Record struct {
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Path      string
-	Slug      string
-	Title     string
-	Topic     string
-	Url       string
-	Body      string
-	Html      string
-}
 
 func main() {
 	db, err := sqlite3.Open("./tils.db")
@@ -86,7 +75,7 @@ func main() {
 			Slug:      slug,
 			Topic:     topic,
 			Title:     title,
-			Url:       path,
+			Url:       fmt.Sprintf("https://github.com/tadasv/til/blob/main/%s", path),
 			Body:      body,
 			Html:      htmlBuffer.String(),
 		}
