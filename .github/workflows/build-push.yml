@@ -64,14 +64,18 @@ jobs:
           build-args: |
             GO_VERSION=${{ env.GO_VERSION }}
 
-          # docker create --name temp_container ${{ env.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REGISTRY_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+      - name: Upload file to Google Cloud Storage
+        #if: github.event_name != 'pull_request'
+        run: |
+          gsutil cp ./tils.db gs://${{ env.GCS_BUCKET_NAME }}/tils.db
+
+      # docker create --name temp_container ${{ env.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REGISTRY_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
       - name: Extract file from Docker image
         run: |
           docker create --name temp_container ${{ steps.build-and-push.outputs.imageid }}
           docker cp temp_container:/app/tils.db ./tils.db
           docker rm temp_container
-
-      # TODO upload tils.db to GCS
 
       - name: Print Image URL
         if: github.event_name != 'pull_request'
