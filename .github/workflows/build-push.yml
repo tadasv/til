@@ -39,7 +39,6 @@ jobs:
       - name: Download file from Google Cloud Storage
         run: |
           gsutil cp gs://${{ env.GCS_BUCKET_NAME }}/tils.db ./tils.db
-        # Note: Make sure your service account has Storage Object Viewer (roles/storage.objectViewer) permission
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -64,6 +63,14 @@ jobs:
           # Pass Go version as a build argument to Dockerfile
           build-args: |
             GO_VERSION=${{ env.GO_VERSION }}
+
+      - name: Extract file from Docker image
+        run: |
+          docker create --name temp_container ${{ env.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REGISTRY_REPOSITORY }}/${{ env.IMAGE_NAME }}:latest
+          docker cp temp_container:/app/tils.db ./tils.db
+          docker rm temp_container
+
+      # TODO upload tils.db to GCS
 
       - name: Print Image URL
         if: github.event_name != 'pull_request'
