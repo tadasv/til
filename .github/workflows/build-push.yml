@@ -64,9 +64,10 @@ jobs:
           build-args: |
             GO_VERSION=${{ env.GO_VERSION }}
 
+          # docker create --name temp_container ${{ env.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REGISTRY_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
       - name: Extract file from Docker image
         run: |
-          docker create --name temp_container ${{ env.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REGISTRY_REPOSITORY }}/${{ env.IMAGE_NAME }}:latest
+          docker create --name temp_container ${{ steps.build-and-push.outputs.imageid }}
           docker cp temp_container:/app/tils.db ./tils.db
           docker rm temp_container
 
