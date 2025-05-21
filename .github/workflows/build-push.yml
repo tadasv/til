@@ -9,6 +9,7 @@ on:
       - main # Or your default branch
 
 env:
+  GCP_PROJECT_NUMBER: ${{ secrets.GCP_PROJECT_NUMBER }} # Your GCP Project Number
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }} # Your GCP Project ID
   GCP_ARTIFACT_REGISTRY_REGION: "us-east1" # e.g., us-central1, europe-west1
   GCP_ARTIFACT_REGISTRY_REPOSITORY: "tadasv" # Your Artifact Registry repository name
@@ -31,7 +32,7 @@ jobs:
         id: auth
         uses: 'google-github-actions/auth@v2'
         with:
-          workload_identity_provider: 'projects/${{ env.GCP_PROJECT_ID }}/locations/global/workloadIdentityPools/${{ secrets.GCP_WORKLOAD_IDENTITY_POOL_ID }}/providers/${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER_ID }}' # e.g., projects/YOUR_PROJECT_ID/locations/global/workloadIdentityPools/YOUR_POOL_ID/providers/YOUR_PROVIDER_ID
+          workload_identity_provider: 'projects/${{ env.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/${{ secrets.GCP_WORKLOAD_IDENTITY_POOL_ID }}/providers/${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER_ID }}' # e.g., projects/YOUR_PROJECT_ID/locations/global/workloadIdentityPools/YOUR_POOL_ID/providers/YOUR_PROVIDER_ID
           service_account: '${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}' # e.g., your-service-account@YOUR_PROJECT_ID.iam.gserviceaccount.com
 
       - name: Set up Docker Buildx
