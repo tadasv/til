@@ -43,11 +43,6 @@ jobs:
         run: |
           gsutil cp gs://${{ env.GCS_BUCKET_NAME }}/tils.db ./tils.db
 
-      - name: Upload file to Google Cloud Storage
-        #if: github.event_name != 'pull_request'
-        run: |
-          gsutil cp ./tils.db gs://${{ env.GCS_BUCKET_NAME }}/tils.db
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -72,11 +67,9 @@ jobs:
           build-args: |
             GO_VERSION=${{ env.GO_VERSION }}
 
-      # docker create --name temp_container ${{ env.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REGISTRY_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-
       - name: Extract file from Docker image
         run: |
-          docker create --name temp_container ${{ steps.build-and-push.outputs.imageid }}
+          docker create --name temp_container ${{ env.GCP_ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REGISTRY_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           docker cp temp_container:/app/tils.db ./tils.db
           docker rm temp_container
 
